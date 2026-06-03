@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blitz Τρίλιζα Multiplayer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Blitz Τρίλιζα</h1>
+        <div id="status">Σύνδεση στον server...</div>
+        
+        <div id="timer-display" class="timer hidden">Χρόνος: --</div>
+        
+        <div id="board" class="board hidden">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+
+        <button id="rematch-btn" class="rematch-btn hidden">Ζήτησε Ρεβάνς 🔄</button>
+
+        <div id="chat-box" class="chat-container hidden">
+            <div id="messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Πες κάτι..." autocomplete="off">
+                <button id="send-btn">Στείλε</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let mySymbol = null, isMyTurn = false, currentRoom = null, gameActive = false;
+
+        const statusDiv = document.getElementById('status');
+        const boardDiv = document.getElementById('board');
+        const timerDiv = document.getElementById('timer-display');
+        const rematchBtn = document.getElementById('rematch-btn');
+        const cells = document.querySelectorAll('.cell');
+
+        // Chat Elements
+        const chatBox = document.getElementById('chat-box'), messagesDiv = document.getElementById('messages'), chatInput = document.getElementById('chat-input'), sendBtn = document.getElementById('send-btn');
+
+        socket.on('waiting', (msg) => { statusDiv.textContent = msg; });
+
+        socket.on('gameStart', ({ room, symbol, myTurn }) => {
+            currentRoom = room; mySymbol = symbol; isMyTurn = myTurn; gameActive = true;
+            
+            boardDiv.classList.remove('hidden'); boardDiv.classList.remove('disabled');
+            chatBox.classList.remove('hidden'); timerDiv.classList.remove('hidden');
+            
+            rematchBtn.classList.add('hidden');
+            rematchBtn.disabled = false;
+            rematchBtn.textContent = "Ζήτησε Ρεβάνς 🔄";
+
+            cells.forEach(cell => { cell.textContent = ''; cell.classList.remove('taken'); });
+            updateStatus();
+        });
+
+        socket.on('timerUpdate', ({ timeLeft, turn }) => {
+            if (!gameActive) return;
+            timerDiv.textContent = `Χρόνος: ${timeLeft}s`;
+            if (turn === socket.id) {
+                timerDiv.style.color = "#ff2e63";
+            } else {
+                timerDiv.style.color = "#00adb5";
+            }
+        });
+
+        socket.on('moveMade', ({ board, turn }) => {
+            board.forEach((val, idx) => {
+                cells[idx].textContent = val;
+                if (val) cells[idx].classList.add('taken');
+            });
+            isMyTurn = (turn === socket.id);
+            if (gameActive) updateStatus();
+        });
+
+        socket.on('gameOver', ({ winner, reason }) => {
+            gameActive = false;
+            boardDiv.classList.add('disabled');
+            timerDiv.classList.add('hidden');
+            
+            // Εμφάνιση κουμπιού Rematch
+            rematchBtn.classList.remove('hidden');
+
+            if (reason === 'timeout') {
+                statusDiv.textContent = winner === socket.id ? "Νίκησες! Ο αντίπαλος έχασε από χρόνο! ⏰🎉" : "Έχασες από χρόνο! ⏰😢";
+            } else if (reason === 'win') {
+                statusDiv.textContent = winner === socket.id ? "Νίκησες! 🎉" : "Έχασες... 😢";
+            } else {
+                statusDiv.textContent = "Ισοπαλία! 🤝";
+            }
+        });
+
+        socket.on('rematchRequested', () => {
+            statusDiv.textContent = "Ο αντίπαλος ζήτησε ρεβάνς! Πατάς το κουμπί;";
+        });
+
+        socket.on('opponentLeft', () => {
+            statusDiv.textContent = "Ο αντίπαλος αποσυνδέθηκε.";
+            boardDiv.classList.add('disabled');
+            timerDiv.classList.add('hidden');
+            rematchBtn.classList.add('hidden');
+            gameActive = false;
+        });
+
+        // Click Events
+        cells.forEach(cell => {
+            cell.addEventListener('click', () => {
+                const index = cell.getAttribute('data-index');
+                if (isMyTurn && !cell.textContent && gameActive) {
+                    socket.emit('makeMove', { room: currentRoom, index: parseInt(index) });
+                }
+            });
+        });
+
+        // Event για το κουμπί Rematch
+        rematchBtn.addEventListener('click', () => {
+            socket.emit('requestRematch', { room: currentRoom });
+            rematchBtn.disabled = true;
+            rematchBtn.textContent = "Αναμονή για αντίπαλο...";
+        });
+
+        // Chat Logic
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        function sendMessage() {
+            const msg = chatInput.value.trim();
+            if (msg && currentRoom) { socket.emit('sendMessage', { room: currentRoom, message: msg }); chatInput.value = ''; }
+        }
+        socket.on('receiveMessage', ({ sender, text }) => {
+            const msgElem = document.createElement('div');
+            msgElem.className = 'chat-message';
+            const isMe = sender === mySymbol ? 'color: #00adb5;' : 'color: #ff2e63;';
+            msgElem.innerHTML = `<span style="${isMe} font-weight: bold;">[${sender}]</span>: ${text}`;
+            messagesDiv.appendChild(msgElem); messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        function updateStatus() { statusDiv.textContent = isMyTurn ? `Δική σου σειρά (${mySymbol})` : "Σειρά του αντιπάλου..."; }
+    </script>
+</body>
+</html>

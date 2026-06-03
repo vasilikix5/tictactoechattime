@@ -1,0 +1,182 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1e1e24; /* Σκούρο διακριτικό background */
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-container {
+    text-align: center;
+    background-color: #141419;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    max-width: 400px;
+    width: 100%;
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    color: #ffffff;
+}
+
+#status {
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #00adb5; /* Έντονο κυανό για να τραβάει την προσοχή */
+    min-height: 27px;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 12px;
+    margin: 0 auto 25px auto;
+    max-width: 300px;
+    aspect-ratio: 1 / 1;
+}
+
+
+.cell {
+    background-color: #2a2a35;
+    border-radius: 12px;
+    font-size: 2.8rem;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+    user-select: none;
+    aspect-ratio: 1 / 1;
+}
+
+.cell:not(.taken):hover {
+    background-color: #3f3f50;
+    transform: scale(1.03);
+}
+
+.cell.taken {
+    cursor: not-allowed;
+    background-color: #22222b;
+}
+
+.cell.taken:contains('X') { color: #00adb5; }
+.cell.taken:contains('O') { color: #ff2e63; }
+
+.hidden {
+    display: none !important;
+}
+
+.disabled {
+    pointer-events: none; /* Απαγορεύει τα κλικ */
+    opacity: 0.5;
+}
+
+.chat-container {
+    background-color: #2a2a35;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+}
+
+
+#messages {
+    height: 140px;
+    overflow-y: auto;
+    border-bottom: 1px solid #3f3f50;
+    margin-bottom: 10px;
+    padding-right: 5px;
+    font-size: 0.95rem;
+    word-break: break-word; 
+}
+
+.chat-message {
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 8px;
+}
+
+#chat-input {
+    flex: 1;
+    background-color: #1e1e24;
+    border: 1px solid #3f3f50;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#chat-input:focus {
+    border-color: #00adb5;
+}
+
+#send-btn {
+    background-color: #00adb5;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#send-btn:hover {
+    background-color: #008c95;
+}
+
+#messages::-webkit-scrollbar {
+    width: 6px;
+}
+#messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+#messages::-webkit-scrollbar-thumb {
+    background: #3f3f50;
+    border-radius: 3px;
+}
+
+.rematch-btn {
+    background-color: #e23e57;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    width: 100%;
+    transition: background 0.2s, transform 0.1s;
+}
+.rematch-btn:hover:not(:disabled) {
+    background-color: #ff2e63;
+    transform: scale(1.02);
+}
+.rematch-btn:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
